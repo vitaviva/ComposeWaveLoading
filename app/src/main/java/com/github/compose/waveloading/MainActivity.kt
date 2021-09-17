@@ -52,54 +52,57 @@ class MainActivity : ComponentActivity() {
 //                                .width(200.dp)
 //                                .height(200.dp)
 //                                .align(Alignment.Center)
-//                                .clip(RoundedCornerShape(100))
+//                                .clipToBounds()
 //                        )
 
 
                         WaveLoading2(
                             Modifier
+//                                .size(200.dp)
                                 .align(Alignment.Center)
                         ) {
 
 
-                            Image(
-                                modifier = Modifier
-                                    .padding(10.dp)
-                                    .clip(RoundedCornerShape(100)),
-                                painter = painterResource(id = R.drawable.fundroid),
-                                contentDescription = ""
-                            )
-//
-//                            Row(Modifier.align(Alignment.Center)) {
-//
-//                                Image(
-//                                    modifier = Modifier
-//                                        .weight(1f)
-//                                        .padding(10.dp)
-//                                        .clip(RoundedCornerShape(100)),
-//                                    painter = painterResource(id = R.drawable.logo_bmw),
-//                                    contentDescription = ""
-//                                )
-//
-//
-//                            Text(
+//                            Image(
 //                                modifier = Modifier
-//                                    .weight(1f).align(Alignment.CenterVertically),
-//                                text = "中秋",
-//                                style = MaterialTheme.typography.h3,
-//                                fontWeight = FontWeight.Bold,
-//                                color = Color.Red
+////                                    .size(100.dp)
+//                                    .padding(10.dp)
+//                                    .clip(RoundedCornerShape(100)),
+//                                painter = painterResource(id = R.drawable.fundroid),
+//                                contentDescription = ""
 //                            )
 //
-//                                Image(
-//                                    modifier = Modifier
-//                                        .weight(1f)
-//                                        .padding(10.dp)
-//                                        .clip(RoundedCornerShape(100)),
-//                                    painter = painterResource(id = R.drawable.logo_bmw),
-//                                    contentDescription = ""
-//                                )
-//                            }
+                            Row(Modifier.align(Alignment.Center)) {
+
+                                Image(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(10.dp)
+                                        .clip(RoundedCornerShape(100)),
+                                    painter = painterResource(id = R.drawable.logo_windows),
+                                    contentDescription = ""
+                                )
+
+
+                                Text(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .align(Alignment.CenterVertically),
+                                    text = "中秋",
+                                    style = MaterialTheme.typography.h3,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.Red
+                                )
+
+                                Image(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(10.dp)
+                                        .clip(RoundedCornerShape(100)),
+                                    painter = painterResource(id = R.drawable.logo_flutter),
+                                    contentDescription = ""
+                                )
+                            }
 
                         }
 

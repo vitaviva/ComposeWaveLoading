@@ -3,7 +3,6 @@ package com.github.compose.waveloading
 import android.graphics.Bitmap
 import android.graphics.BitmapShader
 import android.graphics.Canvas
-import android.graphics.Matrix
 import android.graphics.Shader
 import android.view.View
 import androidx.compose.animation.core.rememberInfiniteTransition
@@ -11,39 +10,42 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Paint
-import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.withSave
-import androidx.compose.ui.graphics.withSaveLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.AbstractComposeView
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.transform
-import kotlin.math.roundToInt
+import convertGreyImgByFloyd
+import convertToBMW
+import gray2Binary
+import toColor
+import toGrayscale
+import zeroAndOne
 
 
 @Composable
 fun WaveLoading2(modifier: Modifier = Modifier, content: @Composable BoxScope.() -> Unit) {
 
     Box(
-        modifier
-            .fillMaxSize()
-            .clipToBounds()
+        modifier.fillMaxSize()
     ) {
 
         var _size by remember { mutableStateOf(IntSize.Zero) }
@@ -78,7 +80,14 @@ fun WaveLoading2(modifier: Modifier = Modifier, content: @Composable BoxScope.()
                         val source = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
                         val canvas2 = Canvas(source)
                         return super.drawChild(canvas2, child, drawingTime).also {
-                            _bitmap = source
+                            _bitmap = Bitmap.createBitmap(
+                                source,
+                                (source.width  - _size.width) / 2,
+                                (source.height  - _size.height) / 2,
+                                _size.width ,
+                                _size.height
+                            )
+                            source.recycle()
                         }
                     }
 
@@ -94,16 +103,19 @@ fun WaveLoading2(modifier: Modifier = Modifier, content: @Composable BoxScope.()
             }
         )
 
-//        Canvas(modifier = Modifier.fillMaxSize()) {
-//
-//            drawIntoCanvas {
-//                it.nativeCanvas.drawRect(Rect(0,0, it.nativeCanvas.width, it.nativeCanvas.height), Paint().apply { color = androidx.compose.ui.graphics.Color.Red }.asFrameworkPaint())
-//            }
-//        }
-//
-//
 
-        WaveLoadingInternal(waveHeight = _size.height * wageHeight, bitmap = _bitmap)
+        with(LocalDensity.current) {
+            Box(
+                Modifier
+                    .width(_size.width.toDp())
+                    .height(_size.height.toDp())
+                    .align(Alignment.Center)
+                    .clipToBounds()
+            ) {
+                //一个dp在当前设备表示的像素量（水波的绘制精度设为一个dp单位）
+                WaveLoadingInternal(1.dp.toPx(), bitmap = _bitmap)
+            }
+        }
 
     }
 
@@ -111,7 +123,8 @@ fun WaveLoading2(modifier: Modifier = Modifier, content: @Composable BoxScope.()
 
 
 @Composable
-private fun WaveLoadingInternal(waveHeight: Float, bitmap: Bitmap) {
+private fun WaveLoadingInternal(dp: Float, bitmap: Bitmap) {
+
 
     val transition = rememberInfiniteTransition()
 
@@ -124,56 +137,57 @@ private fun WaveLoadingInternal(waveHeight: Float, bitmap: Bitmap) {
 
     val waves = remember(Unit) {
         listOf(
-            Wave(0, 0, 2000, scaleX, scaleY),
-            Wave(0, 0, 1500, scaleX, scaleY),
-            Wave(0, 0, 1000, scaleX, scaleY)
+            WaveAnim(2000, 0f, 0f, scaleX, scaleY),
+            WaveAnim(1500, 0f, 0f, scaleX, scaleY),
+            WaveAnim(1000, 0f, 0f, scaleX, scaleY)
         )
     }
 
-    val animate0 by transition.animateOf(waves[0].duration)
-    val animate1 by transition.animateOf(waves[1].duration)
-    val animate2 by transition.animateOf(waves[2].duration)
-
-    val animates = listOf(animate0, animate1, animate2)
-
+    val animates = waves.map { transition.animateOf(duration = it.duration) }
+    val grayBitmap = remember(bitmap) {
+        bitmap.toColor(Color.LightGray)
+    }
 
     Canvas(
         modifier = Modifier.fillMaxSize()
     ) {
 
-        drawImage(toGrayscale(bitmap).asImageBitmap())
+        drawImage(grayBitmap!!.asImageBitmap())
 
         drawIntoCanvas { canvas ->
 
             waves.forEachIndexed { index, wave ->
-                wave.updateWavePath(
-                    size.width.roundToInt(),
-                    size.height.roundToInt(),
-                    waveHeight.roundToInt(),
-                    mCurProgress
-                )
 
                 canvas.withSave {
 
-                    wave.offsetX = wave.width / 2 * (1 - animates[index])
+                    val maxWidth = 2 * scaleX * size.width
+                    val maxHeight = scaleY * size.height
+                    val offsetX = maxWidth / 2 * (1 - animates[index].value) - wave.offsetX
+                    val offsetY = wave.offsetY
 
                     canvas.translate(
-                        -wave.offsetX,
-                        -wave.offsetY
+                        -offsetX,
+                        -offsetY
                     )
 
                     mPaint.shader?.transform {
-                        setTranslate(wave.offsetX, 0f)
+                        setTranslate(offsetX, 0f)
                     }
 
-                    canvas.drawPath(wave.path.asComposePath(), mPaint)
+                    canvas.drawPath(
+                        wave.buildWavePath(
+                            dp = dp,
+                            width = maxWidth,
+                            height = maxHeight,
+                            waveHeight = size.height * wageHeight,
+                            progress = mCurProgress
+                        ), mPaint
+                    )
                 }
 
             }
         }
     }
 
-
 }
 
-private val cleanPaint = Paint()

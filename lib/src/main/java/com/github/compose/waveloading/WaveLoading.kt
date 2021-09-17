@@ -146,7 +146,7 @@ fun WaveLoading(modifier: Modifier) {
 }
 
 
-private fun Paint.updateLinearGradient(context: Context, width: Int, height: Int) {
+fun Paint.updateLinearGradient(context: Context, width: Int, height: Int) {
     val startColor = ColorUtils.setAlphaComponent(mStartColor, (mColorAlpha * 255).toInt())
     val closeColor = ColorUtils.setAlphaComponent(mCloseColor, (mColorAlpha * 255).toInt())
     val w = width.toDouble()
