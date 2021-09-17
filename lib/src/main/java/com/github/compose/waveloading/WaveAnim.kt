@@ -3,7 +3,7 @@ package com.github.compose.waveloading
 import androidx.compose.ui.graphics.Path
 import kotlin.math.roundToInt
 
-data class WaveAnim(
+internal data class WaveAnim(
     val duration: Int,
     val offsetX: Float,
     val offsetY: Float,
@@ -13,15 +13,15 @@ data class WaveAnim(
 
     private val _path = Path()
 
-    fun buildWavePath(
+    internal fun buildWavePath(
         dp: Float,
         width: Float,
         height: Float,
-        waveHeight: Float,
+        amplitude: Float,
         progress: Float
     ): Path {
 
-        var wave = (scaleY * waveHeight).roundToInt() //计算拉伸之后的波幅
+        var wave = (scaleY * amplitude).roundToInt() //计算拉伸之后的波幅
 
         //调整振幅，振幅不大于剩余空间
         val maxWave = height * Math.max(0f, 1 - progress)
@@ -32,15 +32,17 @@ data class WaveAnim(
         _path.reset()
         _path.moveTo(0f, height)
         _path.lineTo(0f, height * (1 - progress))
-        if (wave > 0) {
-            var x = dp
-            while (x < width) {
-                _path.lineTo(
-                    x,
-                    height * (1 - progress) - wave / 2f * Math.sin(4.0 * Math.PI * x / width)
-                        .toFloat()
-                )
-                x += dp
+        if (progress > 0f && progress < 1f) {
+            if (wave > 0) {
+                var x = dp
+                while (x < width) {
+                    _path.lineTo(
+                        x,
+                        height * (1 - progress) - wave / 2f * Math.sin(4.0 * Math.PI * x / width)
+                            .toFloat()
+                    )
+                    x += dp
+                }
             }
         }
         _path.lineTo(width, height * (1 - progress))

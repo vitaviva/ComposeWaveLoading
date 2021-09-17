@@ -1,194 +1,242 @@
 package com.github.compose.waveloading
 
-import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.BitmapShader
-import android.graphics.ColorMatrix
-import android.graphics.LinearGradient
-import android.graphics.Matrix
-import android.graphics.Paint
+import android.graphics.Canvas
 import android.graphics.Shader
-import androidx.compose.animation.core.CubicBezierEasing
-import androidx.compose.animation.core.InfiniteTransition
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
+import android.view.View
+import androidx.annotation.FloatRange
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
-import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.withSave
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.AbstractComposeView
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntSize
-import androidx.core.graphics.ColorUtils
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.graphics.transform
+import toColor
+import toGrayscale
 import kotlin.math.roundToInt
-import android.graphics.ColorMatrixColorFilter
-import androidx.compose.ui.graphics.drawscope.DrawScope
 
+private const val defaultAmlitude = 0.2f
+private const val defaultVelocity = 1.0f
+private const val waveDuration = 2000
+private const val frontDrawAlpha = 0.5f
+private val alphaBitmap by lazy {
+    Bitmap.createBitmap(1, 1, Bitmap.Config.ALPHA_8)
+}
 
-val mCurProgress = 0.5f
-val mStartColor = Color.Red.toArgb()
-val mCloseColor = Color.Yellow.toArgb()
-val mColorAlpha = 0.8f
-val mGradientAngle = 45
-
-val wageHeight = 0.2f   //振幅
-
-
-val scaleX = 1f
-val scaleY = 1f
-
-
-@Composable
-fun InfiniteTransition.animateOf(duration: Int) = animateFloat(
-    initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(
-        animation = tween(duration, easing = CubicBezierEasing(0.4f, 0.2f, 0.6f, 0.8f)),
-        repeatMode = RepeatMode.Restart
-    )
+data class WaveConfig(
+    val progress: Float,
+    val frontDrawType: DrawType,
+    val backDrawType: DrawType,
+    @FloatRange(from = 0.0, to = 1.0) val amplitude: Float,
+    @FloatRange(from = 0.0, to = 1.0) val velocity: Float
 )
 
+val LocalWave = compositionLocalOf<WaveConfig> {
+    error("No Local WaveConfig")
+}
 
 @Composable
-fun WaveLoading(modifier: Modifier) {
+fun WaveLoading(
+    modifier: Modifier = Modifier,
+    progress: Float = 0f,
+    drawType: DrawType = DrawType.DrawImage,
+    backDrawType: DrawType = rememberDrawColor(color = Color.LightGray),
+    @FloatRange(from = 0.0, to = 1.0) amplitude: Float = defaultAmlitude,
+    @FloatRange(from = 0.0, to = 1.0) velocity: Float = defaultVelocity,
+    content: @Composable BoxScope.() -> Unit
+) {
+
+
+    Box(
+        modifier.fillMaxSize()
+    ) {
+
+        var _size by remember { mutableStateOf(IntSize.Zero) }
+
+        var _bitmap by remember {
+            mutableStateOf(Bitmap.createBitmap(1, 1, Bitmap.Config.RGB_565))
+        }
+        AndroidView(
+            modifier = Modifier.fillMaxSize(), // Occupy the max size in the Compose UI tree
+            factory = { context ->
+                // Creates custom view
+                object : AbstractComposeView(context) {
+
+                    @Composable
+                    override fun Content() {
+                        Box(
+                            Modifier
+                                .wrapContentSize()
+                                .onSizeChanged {
+                                    _size = it
+                                }) {
+
+                            content()
+                        }
+                    }
+
+                    override fun drawChild(
+                        canvas: Canvas?,
+                        child: View?,
+                        drawingTime: Long
+                    ): Boolean {
+                        val source = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                        val canvas2 = Canvas(source)
+                        return super.drawChild(canvas2, child, drawingTime).also {
+                            _bitmap = Bitmap.createBitmap(
+                                source,
+                                (source.width - _size.width) / 2,
+                                (source.height - _size.height) / 2,
+                                _size.width,
+                                _size.height
+                            )
+                            source.recycle()
+                        }
+                    }
+
+                }
+            }
+
+        )
+
+
+        CompositionLocalProvider(
+            LocalWave provides WaveConfig(progress, drawType, backDrawType, amplitude, velocity)
+        ) {
+            with(LocalDensity.current) {
+                Box(
+                    Modifier
+                        .width(_size.width.toDp())
+                        .height(_size.height.toDp())
+                        .align(Alignment.Center)
+                        .clipToBounds()
+                ) {
+                    WaveLoadingInternal(bitmap = _bitmap)
+                }
+            }
+        }
+
+    }
+
+}
+
+
+@Composable
+private fun WaveLoadingInternal(bitmap: Bitmap) {
+
+    val dp = LocalDensity.current.run {
+        1.dp.toPx() //一个dp在当前设备表示的像素量（水波的绘制精度设为一个dp单位）
+    }
 
     val transition = rememberInfiniteTransition()
 
+    val (progress, frontDrawType, backDrawType, amplitude, velocity) = LocalWave.current
 
-    val mMatrix = remember(Unit) {
-        Matrix()
-    }
-
-    val context = LocalContext.current
-
-
-    var _size by remember { mutableStateOf(IntSize.Zero) }
-
-    Box(
-        modifier
-            .onSizeChanged {
-                _size = it
-            }) {
-
-        val mPaint = remember(_size) {
-            Paint().apply {
-                alpha = 80
-                updateLinearGradient(context, _size.width, _size.height)
-            }
-        }
-
-        val waves = remember(_size) {
-            listOf(
-                Wave(0, 0, 2000, scaleX, scaleY),
-                Wave(0, 0, 1500, scaleX, scaleY),
-                Wave(0, 0, 1000, scaleX, scaleY)
+    val frontPaint = remember(frontDrawType, bitmap) {
+        Paint().apply {
+            alpha = frontDrawAlpha
+            shader = BitmapShader(
+                when (frontDrawType) {
+                    is DrawType.DrawColor -> bitmap.toColor(frontDrawType.color)
+                    is DrawType.DrawImage -> bitmap
+                    else -> alphaBitmap
+                },
+                Shader.TileMode.CLAMP,
+                Shader.TileMode.CLAMP
             )
         }
+    }
 
-        val animate0 by transition.animateOf(waves[0].duration)
-        val animate1 by transition.animateOf(waves[1].duration)
-        val animate2 by transition.animateOf(waves[2].duration)
+    val backPaint = remember(backDrawType, bitmap) {
+        Paint().apply {
+            shader = BitmapShader(
+                when (backDrawType) {
+                    is DrawType.DrawColor -> bitmap.toColor(backDrawType.color)
+                    is DrawType.DrawImage -> bitmap.toGrayscale()
+                    else -> alphaBitmap
+                },
+                Shader.TileMode.CLAMP,
+                Shader.TileMode.CLAMP
+            )
+        }
+    }
 
-        val animates = listOf(animate0, animate1, animate2)
+    val waves = remember(Unit) {
+        listOf(
+            WaveAnim(waveDuration, 0f, 0f, scaleX, scaleY),
+            WaveAnim((waveDuration * 0.75f).roundToInt(), 0f, 0f, scaleX, scaleY),
+            WaveAnim((waveDuration * 0.5f).roundToInt(), 0f, 0f, scaleX, scaleY)
+        )
+    }
+
+    val animates = waves.map { transition.animateOf(duration = it.duration) }
 
 
-        Canvas(
-            modifier = Modifier
-                .matchParentSize()
-        ) {
+    Canvas(
+        modifier = Modifier.fillMaxSize()
+    ) {
 
-            drawIntoCanvas {
-                val canvas = it.nativeCanvas
+        drawIntoCanvas { canvas ->
 
-                waves.forEachIndexed { index, wave ->
-                    wave.updateWavePath(
-                        canvas.width,
-                        canvas.height,
-                        (_size.height * wageHeight).roundToInt(),
-                        mCurProgress
-                    )
+            //draw back image
+            canvas.drawRect(0f, 0f, size.width, size.height, backPaint)
 
+            waves.forEachIndexed { index, wave ->
 
-                    mMatrix.reset()
-                    canvas.save()
+                canvas.withSave {
 
-                    wave.offsetX = wave.width / 2 * (1 - animates[index])
+                    val maxWidth = 2 * scaleX * size.width / velocity.coerceAtLeast(0.1f)
+                    val maxHeight = scaleY * size.height
+                    val offsetX = maxWidth / 2 * (1 - animates[index].value) - wave.offsetX
+                    val offsetY = wave.offsetY
 
-                    mMatrix.setTranslate(
-                        wave.offsetX,
-                        0f
-                    )
                     canvas.translate(
-                        -wave.offsetX,
-                        -wave.offsetY
+                        -offsetX,
+                        -offsetY
                     )
 
-                    mPaint.shader.setLocalMatrix(mMatrix)
-                    canvas.drawPath(wave.path, mPaint)
-                    canvas.restore()
+                    frontPaint.shader?.transform {
+                        setTranslate(offsetX, 0f)
+                    }
+
+                    canvas.drawPath(
+                        wave.buildWavePath(
+                            dp = dp,
+                            width = maxWidth,
+                            height = maxHeight,
+                            amplitude = size.height * amplitude,
+                            progress = progress
+                        ), frontPaint
+                    )
                 }
 
             }
-
         }
     }
-}
-
-
-fun Paint.updateLinearGradient(context: Context, width: Int, height: Int) {
-    val startColor = ColorUtils.setAlphaComponent(mStartColor, (mColorAlpha * 255).toInt())
-    val closeColor = ColorUtils.setAlphaComponent(mCloseColor, (mColorAlpha * 255).toInt())
-    val w = width.toDouble()
-    val h: Double = (height * mCurProgress).toDouble()
-    val r = Math.sqrt(w * w + h * h) / 2
-    val y = r * Math.sin(2 * Math.PI * mGradientAngle / 360)
-    val x = r * Math.cos(2 * Math.PI * mGradientAngle / 360)
-
-    if (width == 0 || height == 0) {
-        shader = LinearGradient(
-            (w / 2 - x).toFloat(),
-            (h / 2 - y).toFloat(),
-            (w / 2 + x).toFloat(),
-            (h / 2 + y).toFloat(),
-            startColor,
-            closeColor,
-            Shader.TileMode.CLAMP
-        )
-    } else {
-        val bm = BitmapFactory.decodeStream(context.resources.assets.open("fundroid.png"))
-        val matrix = Matrix()
-        matrix.postScale(width / bm.width.toFloat(), height / bm.height.toFloat())
-        val new = Bitmap.createBitmap(bm, 0, 0, bm.width, bm.height, matrix, true)
-        shader = BitmapShader(new, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
-        bm.recycle()
-    }
 
 }
 
-
-fun toGrayscale(bmpOriginal: Bitmap): Bitmap {
-    val width: Int
-    val height: Int
-    height = bmpOriginal.height
-    width = bmpOriginal.width
-    val bmpGrayscale = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-    val c = android.graphics.Canvas(bmpGrayscale)
-    val paint = Paint()
-    val cm = ColorMatrix()
-    cm.setSaturation(0f)
-    val f = ColorMatrixColorFilter(cm)
-    paint.colorFilter = f
-    c.drawBitmap(bmpOriginal, 0f, 0f, paint)
-    return bmpGrayscale
-}
