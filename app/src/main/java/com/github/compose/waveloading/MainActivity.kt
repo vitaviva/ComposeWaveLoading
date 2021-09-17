@@ -113,18 +113,6 @@ class MainActivity : ComponentActivity() {
                             amplitude = _amplitude
                         ) {
 
-
-
-//
-//                            Image(
-//                                modifier = Modifier
-////                                    .size(100.dp)
-//                                    .padding(10.dp)
-//                                    .clip(RoundedCornerShape(100)),
-//                                painter = painterResource(id = R.drawable.fundroid),
-//                                contentDescription = "",
-//                            )
-//
                             Row {
 
                                 Image(
@@ -200,23 +188,16 @@ class MainActivity : ComponentActivity() {
 
 
                         WaveLoading(
-                            Modifier.weight(1f),
+                            Modifier.weight(1f)/*.rotate(animate)*/,
                             backDrawType = if (_backImage) rememberDrawColor() else DrawType.None,
                             progress = _progress,
                             velocity = _velocity,
-                            amplitude = _amplitude
+                            amplitude = _amplitude,
                         ) {
 
-                            val animate by rememberInfiniteTransition().animateFloat(
-                                initialValue = 0f, targetValue = 360f, animationSpec = infiniteRepeatable(
-                                    animation = tween(2000, easing = LinearEasing),
-                                    repeatMode = RepeatMode.Restart
-                                )
-                            )
 
                             Row {
                                 Text(
-                                    modifier = Modifier.rotate(animate),
                                     text = "Hello ",
                                     style = MaterialTheme.typography.h3,
                                     fontWeight = FontWeight.Bold,
@@ -232,7 +213,6 @@ class MainActivity : ComponentActivity() {
                                     color = Color.Magenta
                                 )
                             }
-
 
                         }
 

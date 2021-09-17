@@ -4,9 +4,14 @@ import android.graphics.Bitmap
 import android.graphics.BitmapShader
 import android.graphics.Canvas
 import android.graphics.Shader
-import android.view.View
 import androidx.annotation.FloatRange
+import androidx.compose.animation.core.CubicBezierEasing
+import androidx.compose.animation.core.InfiniteTransition
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -39,10 +44,14 @@ import toColor
 import toGrayscale
 import kotlin.math.roundToInt
 
+
 private const val defaultAmlitude = 0.2f
 private const val defaultVelocity = 1.0f
 private const val waveDuration = 2000
 private const val frontDrawAlpha = 0.5f
+private const val scaleX = 1f
+private const val scaleY = 1f
+
 private val alphaBitmap by lazy {
     Bitmap.createBitmap(1, 1, Bitmap.Config.ALPHA_8)
 }
@@ -99,23 +108,19 @@ fun WaveLoading(
                         }
                     }
 
-                    override fun drawChild(
-                        canvas: Canvas?,
-                        child: View?,
-                        drawingTime: Long
-                    ): Boolean {
+
+                    override fun dispatchDraw(canvas: Canvas?) {
                         val source = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
                         val canvas2 = Canvas(source)
-                        return super.drawChild(canvas2, child, drawingTime).also {
-                            _bitmap = Bitmap.createBitmap(
-                                source,
-                                (source.width - _size.width) / 2,
-                                (source.height - _size.height) / 2,
-                                _size.width,
-                                _size.height
-                            )
-                            source.recycle()
-                        }
+                        super.dispatchDraw(canvas2)
+                        _bitmap = Bitmap.createBitmap(
+                            source,
+                            (source.width - _size.width) / 2,
+                            (source.height - _size.height) / 2,
+                            _size.width,
+                            _size.height
+                        )
+                        source.recycle()
                     }
 
                 }
@@ -240,3 +245,12 @@ private fun WaveLoadingInternal(bitmap: Bitmap) {
 
 }
 
+
+
+@Composable
+private fun InfiniteTransition.animateOf(duration: Int) = animateFloat(
+    initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(
+        animation = tween(duration, easing = CubicBezierEasing(0.4f, 0.2f, 0.6f, 0.8f)),
+        repeatMode = RepeatMode.Restart
+    )
+)
