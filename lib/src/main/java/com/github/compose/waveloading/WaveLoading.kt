@@ -48,7 +48,7 @@ import kotlin.math.roundToInt
 private const val defaultAmlitude = 0.2f
 private const val defaultVelocity = 1.0f
 private const val waveDuration = 2000
-private const val frontDrawAlpha = 0.5f
+private const val foreDrawAlpha = 0.5f
 private const val scaleX = 1f
 private const val scaleY = 1f
 
@@ -57,9 +57,9 @@ private val alphaBitmap by lazy {
 }
 
 data class WaveConfig(
-    val progress: Float,
-    val frontDrawType: DrawType,
+    val foreDrawType: DrawType,
     val backDrawType: DrawType,
+    @FloatRange(from = 0.0, to = 1.0) val progress: Float,
     @FloatRange(from = 0.0, to = 1.0) val amplitude: Float,
     @FloatRange(from = 0.0, to = 1.0) val velocity: Float
 )
@@ -71,9 +71,9 @@ val LocalWave = compositionLocalOf<WaveConfig> {
 @Composable
 fun WaveLoading(
     modifier: Modifier = Modifier,
-    progress: Float = 0f,
-    drawType: DrawType = DrawType.DrawImage,
+    foreDrawType: DrawType = DrawType.DrawImage,
     backDrawType: DrawType = rememberDrawColor(color = Color.LightGray),
+    @FloatRange(from = 0.0, to = 1.0) progress: Float = 0f,
     @FloatRange(from = 0.0, to = 1.0) amplitude: Float = defaultAmlitude,
     @FloatRange(from = 0.0, to = 1.0) velocity: Float = defaultVelocity,
     content: @Composable BoxScope.() -> Unit
@@ -130,7 +130,7 @@ fun WaveLoading(
 
 
         CompositionLocalProvider(
-            LocalWave provides WaveConfig(progress, drawType, backDrawType, amplitude, velocity)
+            LocalWave provides WaveConfig(foreDrawType, backDrawType, progress, amplitude, velocity)
         ) {
             with(LocalDensity.current) {
                 Box(
@@ -159,14 +159,14 @@ private fun WaveLoadingInternal(bitmap: Bitmap) {
 
     val transition = rememberInfiniteTransition()
 
-    val (progress, frontDrawType, backDrawType, amplitude, velocity) = LocalWave.current
+    val (foreDrawType, backDrawType, progress, amplitude, velocity) = LocalWave.current
 
-    val frontPaint = remember(frontDrawType, bitmap) {
+    val forePaint = remember(foreDrawType, bitmap) {
         Paint().apply {
-            alpha = frontDrawAlpha
+            alpha = foreDrawAlpha
             shader = BitmapShader(
-                when (frontDrawType) {
-                    is DrawType.DrawColor -> bitmap.toColor(frontDrawType.color)
+                when (foreDrawType) {
+                    is DrawType.DrawColor -> bitmap.toColor(foreDrawType.color)
                     is DrawType.DrawImage -> bitmap
                     else -> alphaBitmap
                 },
@@ -224,7 +224,7 @@ private fun WaveLoadingInternal(bitmap: Bitmap) {
                         -offsetY
                     )
 
-                    frontPaint.shader?.transform {
+                    forePaint.shader?.transform {
                         setTranslate(offsetX, 0f)
                     }
 
@@ -235,7 +235,7 @@ private fun WaveLoadingInternal(bitmap: Bitmap) {
                             height = maxHeight,
                             amplitude = size.height * amplitude,
                             progress = progress
-                        ), frontPaint
+                        ), forePaint
                     )
                 }
 
@@ -244,7 +244,6 @@ private fun WaveLoadingInternal(bitmap: Bitmap) {
     }
 
 }
-
 
 
 @Composable

@@ -1,4 +1,4 @@
-package com.github.compose.waveloading.ui.theme
+package com.github.compose.waveloading.sample.ui.theme
 
 import androidx.compose.material.Typography
 import androidx.compose.ui.text.TextStyle
