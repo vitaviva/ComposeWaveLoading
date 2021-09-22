@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -34,6 +35,7 @@ import com.github.compose.waveloading.DrawType
 import com.github.compose.waveloading.WaveLoading
 import com.github.compose.waveloading.rememberDrawColor
 import com.github.compose.waveloading.sample.ui.theme.ComposewaveloadingTheme
+import com.github.compose.waveloading.waveLoading
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,14 +70,16 @@ fun Dashboard() {
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        WaveLoading(
-            modifier = Modifier.weight(1f),
-            backDrawType = if (_backImage) DrawType.DrawImage else DrawType.None,
-            progress = _progress,
-            velocity = _velocity,
-            amplitude = _amplitude,
-
-            ) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .waveLoading(
+                    backDrawType = if (_backImage) DrawType.DrawImage else DrawType.None,
+                    progress = _progress,
+                    velocity = _velocity,
+                    amplitude = _amplitude,
+                ),
+        ) {
 
             Row {
                 Image(
@@ -110,14 +114,15 @@ fun Dashboard() {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        WaveLoading(
+        Box(
             Modifier
-//                .size(200.dp)
-                .weight(1f),
-            backDrawType = if (_backImage) rememberDrawColor() else DrawType.None,
-            progress = _progress,
-            velocity = _velocity,
-            amplitude = _amplitude
+                .weight(1f)
+                .waveLoading(
+                    backDrawType = if (_backImage) rememberDrawColor() else DrawType.None,
+                    progress = _progress,
+                    velocity = _velocity,
+                    amplitude = _amplitude
+                ),
         ) {
 
             Row {
@@ -152,13 +157,16 @@ fun Dashboard() {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        WaveLoading(
-            Modifier.weight(1f),
-            foreDrawType = DrawType.DrawColor(Color.Cyan),
-            backDrawType = if (_backImage) rememberDrawColor() else DrawType.None,
-            progress = _progress,
-            velocity = _velocity,
-            amplitude = _amplitude,
+        Box(
+            Modifier
+                .weight(1f)
+                .waveLoading(
+                    foreDrawType = DrawType.DrawColor(Color.Cyan),
+                    backDrawType = if (_backImage) rememberDrawColor() else DrawType.None,
+                    progress = _progress,
+                    velocity = _velocity,
+                    amplitude = _amplitude,
+                ),
         ) {
 
             Row {
@@ -194,12 +202,17 @@ fun Dashboard() {
         Spacer(modifier = Modifier.height(10.dp))
 
 
-        WaveLoading(
-            Modifier.weight(1f),/*.rotate(animate)*/
-            backDrawType = if (_backImage) rememberDrawColor() else DrawType.None,
-            progress = _progress,
-            velocity = _velocity,
-            amplitude = _amplitude,
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .waveLoading(
+                    backDrawType = if (_backImage) rememberDrawColor() else DrawType.None,
+                    progress = _progress,
+                    velocity = _velocity,
+                    amplitude = _amplitude,
+                ),
+            contentAlignment = Alignment.Center
         ) {
 
 
@@ -266,8 +279,9 @@ fun DrawTypeExample() {
 
     Column(Modifier.fillMaxSize()) {
         Row(
-            modifier = Modifier.weight(1f))
-         {
+            modifier = Modifier.weight(1f)
+        )
+        {
             LabelWave(
                 modifier = Modifier.weight(1f),
                 "1",
@@ -286,7 +300,7 @@ fun DrawTypeExample() {
 
         }
 
-        Row( modifier = Modifier.weight(1f)) {
+        Row(modifier = Modifier.weight(1f)) {
 
             LabelWave(
                 modifier = Modifier.weight(1f),
