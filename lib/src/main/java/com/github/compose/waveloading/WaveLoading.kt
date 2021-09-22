@@ -45,12 +45,12 @@ import toGrayscale
 import kotlin.math.roundToInt
 
 
-private const val defaultAmlitude = 0.2f
-private const val defaultVelocity = 1.0f
-private const val waveDuration = 2000
-private const val foreDrawAlpha = 0.5f
-private const val scaleX = 1f
-private const val scaleY = 1f
+internal const val defaultAmlitude = 0.2f
+internal const val defaultVelocity = 1.0f
+internal const val waveDuration = 2000
+internal const val foreDrawAlpha = 0.5f
+internal const val scaleX = 1f
+internal const val scaleY = 1f
 
 private val alphaBitmap by lazy {
     Bitmap.createBitmap(1, 1, Bitmap.Config.ALPHA_8)
@@ -248,7 +248,7 @@ private fun WaveLoadingInternal(bitmap: Bitmap) {
 
 
 @Composable
-private fun InfiniteTransition.animateOf(duration: Int) = animateFloat(
+internal fun InfiniteTransition.animateOf(duration: Int) = animateFloat(
     initialValue = 0f, targetValue = 1f, animationSpec = infiniteRepeatable(
         animation = tween(duration, easing = CubicBezierEasing(0.4f, 0.2f, 0.6f, 0.8f)),
         repeatMode = RepeatMode.Restart
