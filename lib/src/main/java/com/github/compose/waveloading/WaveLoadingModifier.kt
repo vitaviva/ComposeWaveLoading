@@ -3,6 +3,7 @@ package com.github.compose.waveloading
 import android.annotation.SuppressLint
 import androidx.annotation.FloatRange
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.remember
@@ -49,10 +50,12 @@ fun Modifier.waveLoading(
         infiniteTransition.animateOf(duration = it.duration)
     }
 
+    val background = MaterialTheme.colors.background
+
     val xfermodeModifier = remember(progress, amplitude, velocity, waves, backDrawType, foreDrawType) {
         DrawXfermodeModifier(
             foreDrawType = foreDrawType,
-            backDrawType = backDrawType,
+            backDrawType = if (backDrawType is DrawType.None) DrawType.DrawColor(background) else backDrawType,
             dp = dp,
             progress = progress,
             amplitude = amplitude,
@@ -106,7 +109,7 @@ private class DrawXfermodeModifier(
                 colorFilter = ColorFilter.tint(backDrawType.color)
             }
             DrawType.None -> {
-                // TODO 不知道怎么做
+                //
             }
             DrawType.DrawImage -> {
                 val matrix = ColorMatrix()
