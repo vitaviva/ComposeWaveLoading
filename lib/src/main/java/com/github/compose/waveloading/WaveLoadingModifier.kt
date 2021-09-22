@@ -52,8 +52,8 @@ fun Modifier.waveLoading(
 
     val background = MaterialTheme.colors.background
 
-    val xfermodeModifier = remember(progress, amplitude, velocity, waves, backDrawType, foreDrawType) {
-        DrawXfermodeModifier(
+    val waveLoadingModifier = remember(progress, amplitude, velocity, waves, backDrawType, foreDrawType) {
+        WaveLoadingModifier(
             foreDrawType = foreDrawType,
             backDrawType = if (backDrawType is DrawType.None) DrawType.DrawColor(background) else backDrawType,
             dp = dp,
@@ -64,10 +64,10 @@ fun Modifier.waveLoading(
             waveAnimes = waveAnimes
         )
     }
-    xfermodeModifier
+    waveLoadingModifier
 }
 
-private class DrawXfermodeModifier(
+private class WaveLoadingModifier(
     private val foreDrawType: DrawType,
     private val backDrawType: DrawType,
     private val dp: Float,
